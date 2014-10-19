@@ -5,6 +5,7 @@ import grails.rest.RestfulController
 class CrashApiController extends RestfulController {
     static responseFormats = ['json']
 	def myFormat = 'MM-dd-yyyy'
+	//def inputFile = 
 	
 	def addCrashData() {
 		// Grab the data from csv
@@ -40,19 +41,16 @@ class CrashApiController extends RestfulController {
 						latitude: latitude,
 						longitude: longitude);
 
-					println(date);
 					if (!crash.save(flush: true)) {
 						crash.errors.each {
 							println it
 						}
 					}
-				} else {
-					println("Could not add this row");
 				}
 			}
 		
 		render(contentType:"text/json") {
-			success: true
+			success: 'true'
 		}
 	}
 	
@@ -74,8 +72,7 @@ class CrashApiController extends RestfulController {
 			[errorList: errorList]
 			return;
 		}
-		
-		//def myFormat = 'MM-dd-yyyy'
+
 		Date toDate = new Date().parse(myFormat, params.toDate);
 		Date fromDate = new Date().parse(myFormat, params.fromDate);
 		
@@ -124,27 +121,7 @@ class CrashApiController extends RestfulController {
 			return;
 		}
 
-		Date toDate = new Date().parse(myFormat, params.toDate);
-		Date fromDate = new Date().parse(myFormat, params.fromDate);
-
-		def lat = params.latitude as BigDecimal;
-		def lon = params.longitude as BigDecimal;
-		
-		def upperLat = lat + 00.00003
-		def lowerLat = lat - 00.00003
-		def upperLong = lon + 00.00003
-		def lowerLong = lon - 00.00003
-		
-		println(upperLat);
-		println(lowerLat);
-		println(upperLong);
-		println(lowerLong);
-		
-		// Grab the data by latitude and longitude
-		// Query the DB and return as JSON
-		def crashes = Crash.findAll {
-			latitude >= lowerLat && latitude <= upperLat && longitude >= lowerLong && longitude <= upperLong && date >= fromDate && date <= toDate
-		}
+		def crashes = CrashService.getCrashesNearPointAndBetweenDates(params.latitude, params.longitude, params.fromDate, params.toDate)
 		
 		render(contentType:"text/json") {
 			crashes
@@ -170,40 +147,12 @@ class CrashApiController extends RestfulController {
 			return;
 		}
 		
-		def lat = params.latitude as BigDecimal;
-		def lon = params.longitude as BigDecimal;
-		
-		def upperLat = lat + 00.00003
-		def lowerLat = lat - 00.00003
-		def upperLong = lon + 00.00003
-		def lowerLong = lon - 00.00003
-		
-		def returnData = []
-		
-		def yearList = [2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014]
-		for (year in yearList) {
-			Date fromDate = new Date().parse(myFormat, "1-1-"+year)
-			Date toDate = new Date().parse(myFormat, "12-31-"+year)
-			println(fromDate.toLocaleString());
-			println(toDate.toLocaleString());
-			
-			def crashes = Crash.findAll {
-				latitude >= lowerLat && latitude <= upperLat && longitude >= lowerLong && longitude <= upperLong && date >= fromDate && date <= toDate
-			}
-			
-			def crashCount = crashes.size();
-			
-			CrashCount tempObj = new CrashCount(
-				year: year,
-				crashCount: crashCount
-			)
-			
-			// add crashes to 
-			returnData.add(tempObj);
-		}
+		def countByYear = CrashService.getCrashCountByPoint(params.latitude, params.longitude);
 		
 		render(contentType:"text/json") {
-			returnData
+			countByYear
 		}
 	}
+	
+	
 }
